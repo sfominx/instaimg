@@ -1,3 +1,6 @@
+"""
+Telegram bot
+"""
 import io
 import logging
 from pathlib import Path
@@ -5,10 +8,9 @@ from pathlib import Path
 from PIL import ImageFont
 from pymongo import MongoClient
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
-from telegram.ext import Updater, CommandHandler, CallbackContext, MessageHandler, Filters, \
-    CallbackQueryHandler
+from telegram.ext import Updater, CommandHandler, CallbackContext, MessageHandler, Filters, CallbackQueryHandler
 
-from test_to_image import TextToImages
+from text_to_image import TextToImages
 
 DEFAULT_FONT_FAMILY = 'roboto'
 DEFAULT_FONT_SIZE = 40
@@ -38,6 +40,7 @@ configs = db.configs
 
 
 def start(update: Update, context: CallbackContext) -> None:
+    """Welcome message"""
     update.message.reply_text('Добро пожаловать в Text2Image бот.\n'
                               'Пришли мне текст и я переведу его в изображения.\n\n'
                               'Так же можно настроить шрифт и его размер:\n'
@@ -67,8 +70,7 @@ def button(update: Update, context: CallbackContext) -> None:
             selected_font = DEFAULT_FONT_FAMILY.title()
 
         configs.update_one(user_query, set_query)
-
-        query.edit_message_text(text=f"Выбранный шрифт: {selected_font}")
+        query.edit_message_text(text=f'Выбранный шрифт: {selected_font}')
 
     if query.data.startswith('size'):
         if query.data == 'size_smallest':
@@ -91,20 +93,20 @@ def button(update: Update, context: CallbackContext) -> None:
             selected_size = DEFAULT_FONT_SIZE
 
         configs.update_one(user_query, set_query)
-
-        query.edit_message_text(text=f"Выбранный размер шрифта: {selected_size}")
+        query.edit_message_text(text=f'Выбранный размер шрифта: {selected_size}')
 
 
 def help_command(update: Update, context: CallbackContext) -> None:
     """/help command"""
-    update.message.reply_text('/font — выбор шрифта\n/size — выбор размера шрифта')
+    update.message.reply_text('/font — выбор шрифта\n'
+                              '/size — выбор размера шрифта')
 
 
 def font_command(update: Update, context: CallbackContext) -> None:
     """/font command"""
-    font_list = [[InlineKeyboardButton(text="Roboto", callback_data="font_roboto"),
-                  InlineKeyboardButton(text="Raleway", callback_data="font_raleway"),
-                  InlineKeyboardButton(text="Playfair", callback_data="font_playfair")
+    font_list = [[InlineKeyboardButton(text='Roboto', callback_data='font_roboto'),
+                  InlineKeyboardButton(text='Raleway', callback_data='font_raleway'),
+                  InlineKeyboardButton(text='Playfair', callback_data='font_playfair')
                   ],
                  ]
     keyboard = InlineKeyboardMarkup(font_list)
@@ -114,11 +116,11 @@ def font_command(update: Update, context: CallbackContext) -> None:
 
 def size_command(update: Update, context: CallbackContext) -> None:
     """/size command"""
-    font_list = [[InlineKeyboardButton(text="XS", callback_data="size_smallest"),
-                  InlineKeyboardButton(text="S", callback_data="size_small"),
-                  InlineKeyboardButton(text="M", callback_data="size_medium"),
-                  InlineKeyboardButton(text="L", callback_data="size_big"),
-                  InlineKeyboardButton(text="XL", callback_data="size_biggest")
+    font_list = [[InlineKeyboardButton(text='XS', callback_data='size_smallest'),
+                  InlineKeyboardButton(text='S', callback_data='size_small'),
+                  InlineKeyboardButton(text='M', callback_data='size_medium'),
+                  InlineKeyboardButton(text='L', callback_data='size_big'),
+                  InlineKeyboardButton(text='XL', callback_data='size_biggest')
                   ],
                  ]
     keyboard = InlineKeyboardMarkup(font_list)
@@ -126,7 +128,8 @@ def size_command(update: Update, context: CallbackContext) -> None:
     update.message.reply_text('Выберите размер шрифта', reply_markup=keyboard)
 
 
-def echo(update, context):
+def response(update: Update, context: CallbackContext) -> None:
+    """Response with images"""
     user_config = configs.find_one({'user_id': update.effective_chat.id})
     if not user_config:
         default_user_config = {'user_id': update.effective_chat.id,
@@ -135,7 +138,7 @@ def echo(update, context):
                                'font-color': DEFAULT_FONT_COLOR,
                                'background-color': DEFAULT_BACKGROUND_COLOR,
                                'orientation': DEFAULT_ORIENTATION}
-        user_config = configs.find_one({"_id": configs.insert_one(default_user_config).inserted_id})
+        user_config = configs.find_one({'_id': configs.insert_one(default_user_config).inserted_id})
 
     user_font = FONTS.get(user_config['font-family'], FONTS[DEFAULT_FONT_FAMILY])
     font = ImageFont.truetype(str(Path('.') / 'fonts' / user_font), user_config['font-size'])
@@ -155,15 +158,16 @@ def echo(update, context):
 
 
 def main() -> None:
+    """Main Telegram Bot function"""
     updater = Updater(Path('telegram_bot_token').read_text().strip(), use_context=True)
     dispatcher = updater.dispatcher
 
-    dispatcher.add_handler(CommandHandler("start", start))
-    dispatcher.add_handler(CommandHandler("help", help_command))
-    dispatcher.add_handler(CommandHandler("font", font_command))
-    dispatcher.add_handler(CommandHandler("size", size_command))
-    echo_handler = MessageHandler(Filters.text & (~Filters.command), echo)
-    dispatcher.add_handler(echo_handler)
+    dispatcher.add_handler(CommandHandler('start', start))
+    dispatcher.add_handler(CommandHandler('help', help_command))
+    dispatcher.add_handler(CommandHandler('font', font_command))
+    dispatcher.add_handler(CommandHandler('size', size_command))
+    response_handler = MessageHandler(Filters.text & (~Filters.command), response)
+    dispatcher.add_handler(response_handler)
 
     updater.dispatcher.add_handler(CallbackQueryHandler(button))
 

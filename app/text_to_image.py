@@ -1,3 +1,6 @@
+"""
+Convert text to images
+"""
 from PIL import ImageFont, Image, ImageDraw
 from typus import ru_typus
 from typus.chars import NNBSP, NBSP
@@ -6,6 +9,7 @@ IMG_MODE = 'RGB'
 
 
 class TextToImages:
+    """Make several images from text"""
     def __init__(self, width: int, height: int, font: ImageFont, background_color):
         self.font = font
         self.base_font_width, self.base_font_height = self.font.getsize('W')
@@ -19,6 +23,7 @@ class TextToImages:
         self._new_image = False
 
     def _reset_line(self):
+        """Start new image, place cursor in the beginning of the image"""
         self._text_y = self.base_font_height
         self.image = Image.new(IMG_MODE, (self.width, self.height), color=self.background_color)
         self._canvas = ImageDraw.Draw(self.image)
@@ -26,15 +31,18 @@ class TextToImages:
         self._new_image = True
 
     def _shift_line(self):
+        """Shift cursor to new line"""
         self._new_image = False
         self._text_y += self.base_font_height + 2
 
     def _draw_line(self, text):
+        """Print text line"""
         self._canvas.text((self.base_font_width, self._text_y), text, fill=(0, 0, 0))
         if text.strip() or not self._new_image:
             self._shift_line()
 
     def split_text(self, text: str, typo: bool = True):
+        """Split the text so that it fits into the images"""
         if typo:
             text_to_process = ru_typus(text).splitlines()
         else:
@@ -77,6 +85,7 @@ class TextToImages:
         return parts
 
     def render(self, text: str, typo: bool, part: int):
+        """Render image"""
         part = self.split_text(text, typo)[part]
 
         self._reset_line()
