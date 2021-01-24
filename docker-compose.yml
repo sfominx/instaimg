@@ -1,0 +1,27 @@
+version: "3.7"
+
+services:
+  app:
+    build:
+      dockerfile: Dockerfile
+      context: .
+    container_name: club_app
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+    - ./telegram_bot_token:/app/telegram_bot_token
+    restart: always
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:4.4.3-bionic
+    environment:
+      MONGO_INITDB_DATABASE: instaimg
+    volumes:
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+      - mongodata:/data/db
+    restart: always
+
+volumes:
+  mongodata:

@@ -1,0 +1,4 @@
+Pillow==8.1.0
+pymongo==3.11.2
+python-telegram-bot==13.1
+typus==0.2.2
