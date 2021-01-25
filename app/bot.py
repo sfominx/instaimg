@@ -28,15 +28,11 @@ ORIENTATION = {'square': (DEFAULT_IMG_WIDTH, DEFAULT_IMG_WIDTH),
                'vertical': (DEFAULT_IMG_WIDTH, DEFAULT_IMG_WIDTH // 4 * 5),
                'horizontal': (DEFAULT_IMG_WIDTH, DEFAULT_IMG_WIDTH // 16 * 9)}
 
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
-)
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 logger = logging.getLogger(__name__)
 
-client = MongoClient('mongodb://mongo:27017')
-db = client['instaimg']
-configs = db.configs
+configs = MongoClient('mongodb://mongo:27017').instaimg.configs
 
 
 def start(update: Update, context: CallbackContext) -> None:

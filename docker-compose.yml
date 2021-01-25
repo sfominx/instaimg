@@ -5,7 +5,7 @@ services:
     build:
       dockerfile: Dockerfile
       context: .
-    container_name: club_app
+    container_name: instaimg_bot_app
     environment:
       - PYTHONUNBUFFERED=1
     volumes:
