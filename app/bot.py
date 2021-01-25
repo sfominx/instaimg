@@ -26,7 +26,8 @@ FONTS = {'roboto': 'Roboto-Regular.ttf',
 
 ORIENTATION = {'square': (DEFAULT_IMG_WIDTH, DEFAULT_IMG_WIDTH),
                'vertical': (DEFAULT_IMG_WIDTH, DEFAULT_IMG_WIDTH // 4 * 5),
-               'horizontal': (DEFAULT_IMG_WIDTH, DEFAULT_IMG_WIDTH // 16 * 9)}
+               'horizontal': (DEFAULT_IMG_WIDTH, DEFAULT_IMG_WIDTH // 16 * 9),
+               'stories': (DEFAULT_IMG_WIDTH, DEFAULT_IMG_WIDTH // 9 * 16)}
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
@@ -41,7 +42,8 @@ def start(update: Update, context: CallbackContext) -> None:
                               'Пришли мне текст и я переведу его в изображения.\n\n'
                               'Так же можно настроить шрифт и его размер:\n'
                               '/font — выбор шрифта\n'
-                              '/size — выбор размера шрифта')
+                              '/size — выбор размера шрифта\n',
+                              '/orientation  форма изображения')
 
 
 def button(update: Update, context: CallbackContext) -> None:
@@ -67,6 +69,7 @@ def button(update: Update, context: CallbackContext) -> None:
 
         configs.update_one(user_query, set_query)
         query.edit_message_text(text=f'Выбранный шрифт: {selected_font}')
+        return
 
     if query.data.startswith('size'):
         if query.data == 'size_smallest':
@@ -90,6 +93,27 @@ def button(update: Update, context: CallbackContext) -> None:
 
         configs.update_one(user_query, set_query)
         query.edit_message_text(text=f'Выбранный размер шрифта: {selected_size}')
+        return
+
+    if query.data.startswith('orientation'):
+        if query.data == 'orientation_square':
+            set_query = {'$set': {'orientation': 'square'}}
+            selected_orientation = 'квадратная'
+        elif query.data == 'orientation_vertical':
+            set_query = {'$set': {'orientation': 'vertical'}}
+            selected_orientation = 'вертикальная'
+        elif query.data == 'orientation_horizontal':
+            set_query = {'$set': {'orientation': 'horizontal'}}
+            selected_orientation = 'горизонтальная'
+        elif query.data == 'orientation_stories':
+            set_query = {'$set': {'orientation': 'stories'}}
+            selected_orientation = 'сториз'
+        else:
+            set_query = {'$set': {'orientation': DEFAULT_ORIENTATION}}
+            selected_orientation = 'квадратная'
+
+        configs.update_one(user_query, set_query)
+        query.edit_message_text(text=f'Выбранная форма изображения: {selected_orientation}')
 
 
 def help_command(update: Update, context: CallbackContext) -> None:
@@ -122,6 +146,19 @@ def size_command(update: Update, context: CallbackContext) -> None:
     keyboard = InlineKeyboardMarkup(font_list)
 
     update.message.reply_text('Выберите размер шрифта', reply_markup=keyboard)
+
+
+def orientation_command(update: Update, context: CallbackContext) -> None:
+    """/orientation command"""
+    font_list = [[InlineKeyboardButton(text='Square', callback_data='orientation_square'),
+                  InlineKeyboardButton(text='Vertical', callback_data='orientation_vertical'),
+                  InlineKeyboardButton(text='Horizontal', callback_data='orientation_horizontal'),
+                  InlineKeyboardButton(text='Stories', callback_data='orientation_stories')
+                  ],
+                 ]
+    keyboard = InlineKeyboardMarkup(font_list)
+
+    update.message.reply_text('Выберите форму изображения', reply_markup=keyboard)
 
 
 def response(update: Update, context: CallbackContext) -> None:
@@ -162,6 +199,7 @@ def main() -> None:
     dispatcher.add_handler(CommandHandler('help', help_command))
     dispatcher.add_handler(CommandHandler('font', font_command))
     dispatcher.add_handler(CommandHandler('size', size_command))
+    dispatcher.add_handler(CommandHandler('orientation', orientation_command))
     response_handler = MessageHandler(Filters.text & (~Filters.command), response)
     dispatcher.add_handler(response_handler)
 
