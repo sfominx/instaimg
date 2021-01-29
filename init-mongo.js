@@ -1,1 +1,0 @@
-db.instaimg.createIndex({ "chat_id": 1 }, { unique: true })

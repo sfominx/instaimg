@@ -51,68 +51,68 @@ def button(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     query.answer()
 
-    user_query = {'user_id': update.effective_chat.id}
+    user_query = {'_id': update.effective_chat.id}
 
     if query.data.startswith('font'):
         if query.data == 'font_roboto':
-            set_query = {'$set': {'font-family': 'roboto'}}
+            set_query = {'font-family': 'roboto'}
             selected_font = 'Roboto'
         elif query.data == 'font_raleway':
-            set_query = {'$set': {'font-family': 'raleway'}}
+            set_query = {'font-family': 'raleway'}
             selected_font = 'Raleway'
         elif query.data == 'font_playfair':
-            set_query = {'$set': {'font-family': 'playfair'}}
+            set_query = {'font-family': 'playfair'}
             selected_font = 'Playfair'
         else:
-            set_query = {'$set': {'font-family': DEFAULT_FONT_FAMILY}}
+            set_query = {'font-family': DEFAULT_FONT_FAMILY}
             selected_font = DEFAULT_FONT_FAMILY.title()
 
-        configs.update_one(user_query, set_query)
+        configs.update_one(user_query, {'$set': set_query})
         query.edit_message_text(text=f'Выбранный шрифт: {selected_font}')
         return
 
     if query.data.startswith('size'):
         if query.data == 'size_smallest':
-            set_query = {'$set': {'font-size': 20}}
+            set_query = {'font-size': 20}
             selected_size = 'XS'
         elif query.data == 'size_small':
-            set_query = {'$set': {'font-size': 30}}
+            set_query = {'font-size': 30}
             selected_size = 'S'
         elif query.data == 'size_medium':
-            set_query = {'$set': {'font-size': 40}}
+            set_query = {'font-size': 40}
             selected_size = 'M'
         elif query.data == 'size_big':
-            set_query = {'$set': {'font-size': 50}}
+            set_query = {'font-size': 50}
             selected_size = 'L'
         elif query.data == 'size_biggest':
-            set_query = {'$set': {'font-size': 60}}
+            set_query = {'font-size': 60}
             selected_size = 'XL'
         else:
-            set_query = {'$set': {'font-size': DEFAULT_FONT_SIZE}}
+            set_query = {'font-size': DEFAULT_FONT_SIZE}
             selected_size = DEFAULT_FONT_SIZE
 
-        configs.update_one(user_query, set_query)
+        configs.update_one(user_query, {'$set': set_query})
         query.edit_message_text(text=f'Выбранный размер шрифта: {selected_size}')
         return
 
     if query.data.startswith('orientation'):
         if query.data == 'orientation_square':
-            set_query = {'$set': {'orientation': 'square'}}
+            set_query = {'orientation': 'square'}
             selected_orientation = 'квадратная'
         elif query.data == 'orientation_vertical':
-            set_query = {'$set': {'orientation': 'vertical'}}
+            set_query = {'orientation': 'vertical'}
             selected_orientation = 'вертикальная'
         elif query.data == 'orientation_horizontal':
-            set_query = {'$set': {'orientation': 'horizontal'}}
+            set_query = {'orientation': 'horizontal'}
             selected_orientation = 'горизонтальная'
         elif query.data == 'orientation_stories':
-            set_query = {'$set': {'orientation': 'stories'}}
+            set_query = {'orientation': 'stories'}
             selected_orientation = 'сториз'
         else:
-            set_query = {'$set': {'orientation': DEFAULT_ORIENTATION}}
+            set_query = {'orientation': DEFAULT_ORIENTATION}
             selected_orientation = 'квадратная'
 
-        configs.update_one(user_query, set_query)
+        configs.update_one(user_query, {'$set': set_query})
         query.edit_message_text(text=f'Выбранная форма изображения: {selected_orientation}')
 
 
@@ -163,9 +163,9 @@ def orientation_command(update: Update, context: CallbackContext) -> None:
 
 def response(update: Update, context: CallbackContext) -> None:
     """Response with images"""
-    user_config = configs.find_one({'user_id': update.effective_chat.id})
+    user_config = configs.find_one({'_id': update.effective_chat.id})
     if not user_config:
-        default_user_config = {'user_id': update.effective_chat.id,
+        default_user_config = {'_id': update.effective_chat.id,
                                'font-family': DEFAULT_FONT_FAMILY,
                                'font-size': DEFAULT_FONT_SIZE,
                                'font-color': DEFAULT_FONT_COLOR,

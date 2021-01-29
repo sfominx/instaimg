@@ -19,7 +19,6 @@ services:
     environment:
       MONGO_INITDB_DATABASE: instaimg
     volumes:
-      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
       - mongodata:/data/db
     restart: always
 
