@@ -3,6 +3,7 @@ Telegram bot
 """
 import io
 import logging
+from datetime import datetime
 from pathlib import Path
 
 from PIL import ImageFont
@@ -36,6 +37,11 @@ logger = logging.getLogger(__name__)
 configs = MongoClient('mongodb://mongo:27017').instaimg.configs
 
 
+def update_last_activity(chat_id: int):
+    user_query = {'_id': chat_id}
+    configs.update_one(user_query, {'$set': {'last-activity': datetime.now()}})
+
+
 def start(update: Update, context: CallbackContext) -> None:
     """Welcome message"""
     update.message.reply_text('Добро пожаловать в Text2Image бот.\n'
@@ -44,7 +50,7 @@ def start(update: Update, context: CallbackContext) -> None:
                               '/font — выбор шрифта\n'
                               '/size — выбор размера шрифта\n',
                               '/orientation  форма изображения')
-
+    update_last_activity(update.effective_chat.id)
 
 def button(update: Update, context: CallbackContext) -> None:
     """Button press"""
@@ -115,11 +121,14 @@ def button(update: Update, context: CallbackContext) -> None:
         configs.update_one(user_query, {'$set': set_query})
         query.edit_message_text(text=f'Выбранная форма изображения: {selected_orientation}')
 
+    update_last_activity(update.effective_chat.id)
 
 def help_command(update: Update, context: CallbackContext) -> None:
     """/help command"""
     update.message.reply_text('/font — выбор шрифта\n'
                               '/size — выбор размера шрифта')
+
+    update_last_activity(update.effective_chat.id)
 
 
 def font_command(update: Update, context: CallbackContext) -> None:
@@ -132,6 +141,8 @@ def font_command(update: Update, context: CallbackContext) -> None:
     keyboard = InlineKeyboardMarkup(font_list)
 
     update.message.reply_text('Выберите шрифт', reply_markup=keyboard)
+
+    update_last_activity(update.effective_chat.id)
 
 
 def size_command(update: Update, context: CallbackContext) -> None:
@@ -147,6 +158,8 @@ def size_command(update: Update, context: CallbackContext) -> None:
 
     update.message.reply_text('Выберите размер шрифта', reply_markup=keyboard)
 
+    update_last_activity(update.effective_chat.id)
+
 
 def orientation_command(update: Update, context: CallbackContext) -> None:
     """/orientation command"""
@@ -159,6 +172,8 @@ def orientation_command(update: Update, context: CallbackContext) -> None:
     keyboard = InlineKeyboardMarkup(font_list)
 
     update.message.reply_text('Выберите форму изображения', reply_markup=keyboard)
+
+    update_last_activity(update.effective_chat.id)
 
 
 def response(update: Update, context: CallbackContext) -> None:
@@ -188,6 +203,7 @@ def response(update: Update, context: CallbackContext) -> None:
         images.append(InputMediaPhoto(img_byte_arr))
 
     update.message.reply_media_group(images)
+    update_last_activity(update.effective_chat.id)
 
 
 def main() -> None:
