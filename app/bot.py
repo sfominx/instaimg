@@ -9,8 +9,10 @@ from pathlib import Path
 from PIL import ImageFont
 from pymongo import MongoClient
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
-from telegram.ext import Updater, CommandHandler, CallbackContext, MessageHandler, Filters, CallbackQueryHandler
+from telegram.ext import Updater, CommandHandler, CallbackContext, MessageHandler, Filters, CallbackQueryHandler, \
+    ConversationHandler
 
+from color_recognition import text_to_rgb
 from text_to_image import TextToImages
 
 DEFAULT_FONT_FAMILY = 'roboto'
@@ -30,11 +32,19 @@ ORIENTATION = {'square': (DEFAULT_IMG_WIDTH, DEFAULT_IMG_WIDTH),
                'horizontal': (DEFAULT_IMG_WIDTH, DEFAULT_IMG_WIDTH // 16 * 9),
                'stories': (DEFAULT_IMG_WIDTH, DEFAULT_IMG_WIDTH // 9 * 16)}
 
+COLOR, BGCOLOR = range(2)
+
+HELP_MESSAGE = '/font — выбор шрифта\n' \
+               '/size — выбор размера шрифта\n' \
+               '/orientation — форма изображения\n' \
+               '/color — выбор цвета текста\n' \
+               '/bgcolor — выбор цвета фона'
+
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 logger = logging.getLogger(__name__)
 
-configs = MongoClient('mongodb://mongo:27017').instaimg.configs
+configs = MongoClient('mongodb://mongo').instaimg.configs
 
 
 def update_last_activity(chat_id: int):
@@ -47,10 +57,7 @@ def start(update: Update, context: CallbackContext) -> None:  # pylint: disable=
     """Welcome message"""
     update.message.reply_text('Добро пожаловать в Text2Image бот.\n'
                               'Пришли мне текст и я переведу его в изображения.\n\n'
-                              'Так же можно настроить шрифт и его размер:\n'
-                              '/font — выбор шрифта\n'
-                              '/size — выбор размера шрифта\n'
-                              '/orientation — форма изображения')
+                              'Так же можно настроить шрифт и его размер:\n' + HELP_MESSAGE)
     update_last_activity(update.effective_chat.id)
 
 
@@ -125,9 +132,7 @@ def button(update: Update, context: CallbackContext) -> None:  # pylint: disable
 
 def help_command(update: Update, context: CallbackContext) -> None:  # pylint: disable=unused-argument
     """/help command"""
-    update.message.reply_text('/font — выбор шрифта\n'
-                              '/size — выбор размера шрифта\n'
-                              '/orientation — форма изображения')
+    update.message.reply_text(HELP_MESSAGE)
 
     update_last_activity(update.effective_chat.id)
 
@@ -177,6 +182,62 @@ def orientation_command(update: Update, context: CallbackContext) -> None:  # py
     update_last_activity(update.effective_chat.id)
 
 
+def color_command(update: Update, context: CallbackContext) -> None:  # pylint: disable=unused-argument
+    """/color command"""
+    update.message.reply_text('Выберите цвет текста. По-английски, по-русски или hex.\n'
+                              'Например: green, зеленый, 008000, #008000\n\n'
+                              '/cancel для отмены.')
+
+    update_last_activity(update.effective_chat.id)
+    return COLOR
+
+
+def color_input(update: Update, context: CallbackContext) -> int:  # pylint: disable=unused-argument
+    user_query = {'_id': update.effective_chat.id}
+    try:
+        parsed_color = text_to_rgb(update.message.text.strip())
+        configs.update_one(user_query, {'$set': {'font-color': parsed_color}})
+        update.message.reply_text(f'Цвет текста: {update.message.text.strip()}')
+        update_last_activity(update.effective_chat.id)
+        return ConversationHandler.END
+    except ValueError:
+        update.message.reply_text(f'Не получилось распознать текст, попробуй другой.\n\n'
+                                  '/cancel для отмены.')
+        update_last_activity(update.effective_chat.id)
+        return COLOR
+
+
+def bgcolor_command(update: Update, context: CallbackContext) -> None:  # pylint: disable=unused-argument
+    """/bgcolor command"""
+    update.message.reply_text('Выберите цвет фона. По-английски, по-русски или hex.\n'
+                              'Например: green, зеленый, 008000, #008000\n\n'
+                              '/cancel для отмены.')
+
+    update_last_activity(update.effective_chat.id)
+    return COLOR
+
+
+def bgcolor_input(update: Update, context: CallbackContext) -> int:  # pylint: disable=unused-argument
+    user_query = {'_id': update.effective_chat.id}
+    try:
+        parsed_color = text_to_rgb(update.message.text.strip())
+        configs.update_one(user_query, {'$set': {'background-color': parsed_color}})
+        update.message.reply_text(f'Цвет фона: {update.message.text.strip()}')
+        update_last_activity(update.effective_chat.id)
+        return ConversationHandler.END
+    except ValueError:
+        update.message.reply_text(f'Не получилось распознать текст, попробуй другой.\n\n'
+                                  '/cancel для отмены.')
+        update_last_activity(update.effective_chat.id)
+        return COLOR
+
+
+def cancel(update: Update, context: CallbackContext) -> int:  # pylint: disable=unused-argument
+    update.message.reply_text('Ок')
+    update_last_activity(update.effective_chat.id)
+    return ConversationHandler.END
+
+
 def response(update: Update, context: CallbackContext) -> None:  # pylint: disable=unused-argument
     """Response with images"""
     user_config = configs.find_one({'_id': update.effective_chat.id})
@@ -193,7 +254,11 @@ def response(update: Update, context: CallbackContext) -> None:  # pylint: disab
     font = ImageFont.truetype(str(Path('.') / 'fonts' / user_font), user_config['font-size'])
 
     img_width, img_height = ORIENTATION.get(user_config['orientation'], 'square')
-    tti = TextToImages(img_width, img_height, font, tuple(user_config['background-color']))
+    tti = TextToImages(img_width,
+                       img_height,
+                       font,
+                       tuple(user_config['background-color']),
+                       tuple(user_config['font-color']))
 
     images = []
     for part in range(len(tti.split_text(update.message.text, True))):
@@ -217,6 +282,25 @@ def main() -> None:
     dispatcher.add_handler(CommandHandler('font', font_command))
     dispatcher.add_handler(CommandHandler('size', size_command))
     dispatcher.add_handler(CommandHandler('orientation', orientation_command))
+
+    color_conv_handler = ConversationHandler(
+        entry_points=[CommandHandler('color', color_command)],
+        states={
+            COLOR: [MessageHandler(Filters.text & ~Filters.command, color_input)]
+        },
+        fallbacks=[CommandHandler('cancel', cancel)],
+    )
+    dispatcher.add_handler(color_conv_handler)
+
+    bg_color_conv_handler = ConversationHandler(
+        entry_points=[CommandHandler('bgcolor', bgcolor_command)],
+        states={
+            COLOR: [MessageHandler(Filters.text & ~Filters.command, bgcolor_input)]
+        },
+        fallbacks=[CommandHandler('cancel', cancel)],
+    )
+    dispatcher.add_handler(bg_color_conv_handler)
+
     response_handler = MessageHandler(Filters.text & (~Filters.command), response)
     dispatcher.add_handler(response_handler)
 

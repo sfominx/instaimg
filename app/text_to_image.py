@@ -11,7 +11,7 @@ IMG_MODE = 'RGB'
 class TextToImages:  # pylint: disable=too-many-instance-attributes
     """Make several images from text"""
 
-    def __init__(self, width: int, height: int, font: ImageFont, background_color):
+    def __init__(self, width: int, height: int, font: ImageFont, background_color, font_color):
         self.font = font
         self.base_font_width, self.base_font_height = self.font.getsize('W')
         self.width = width
@@ -22,6 +22,7 @@ class TextToImages:  # pylint: disable=too-many-instance-attributes
         self._canvas = None
         self._max_width = self.width - 2.5 * self.base_font_width
         self._new_image = False
+        self.font_color = font_color
 
     def _reset_line(self):
         """Start new image, place cursor in the beginning of the image"""
@@ -38,7 +39,7 @@ class TextToImages:  # pylint: disable=too-many-instance-attributes
 
     def _draw_line(self, text):
         """Print text line"""
-        self._canvas.text((self.base_font_width, self._text_y), text, fill=(0, 0, 0))
+        self._canvas.text((self.base_font_width, self._text_y), text, fill=self.font_color)
         if text.strip() or not self._new_image:
             self._shift_line()
 
