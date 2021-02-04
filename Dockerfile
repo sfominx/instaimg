@@ -2,13 +2,12 @@ FROM python:3.8-slim-buster
 
 ENV DEBIAN_FRONTEND noninteractive
 
-WORKDIR /app
+WORKDIR /opt/bot
 
-# install requirements into a separate layer
-COPY ./requirements.txt /app/requirements.txt
-RUN pip install -r requirements.txt
+RUN python3 -m venv /opt/bot/venv
+COPY ./requirements.txt /opt/bot/requirements.txt
+RUN . /opt/bot/venv/bin/activate && pip install -r requirements.txt
 
-# copy the code
-COPY ./app /app
+COPY bot /opt/bot
 
-CMD ["python", "/app/bot.py"]
+CMD . /opt/bot/venv/bin/activate && exec python /opt/bot/bot.py

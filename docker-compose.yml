@@ -1,15 +1,15 @@
 version: "3.7"
 
 services:
-  app:
+  bot:
     build:
       dockerfile: Dockerfile
       context: .
-    container_name: instaimg_bot_app
+    container_name: instaimg_bot
     environment:
       - PYTHONUNBUFFERED=1
     volumes:
-    - ./telegram_bot_token:/app/telegram_bot_token
+    - ./telegram_bot_token:/opt/bot/telegram_bot_token
     restart: always
     depends_on:
       - mongo
