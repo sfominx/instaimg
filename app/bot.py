@@ -38,7 +38,8 @@ HELP_MESSAGE = '/font — выбор шрифта\n' \
                '/size — выбор размера шрифта\n' \
                '/orientation — форма изображения\n' \
                '/color — выбор цвета текста\n' \
-               '/bgcolor — выбор цвета фона'
+               '/bgcolor — выбор цвета фона\n' \
+               '/reset — сброс параметров'
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
@@ -238,6 +239,19 @@ def cancel(update: Update, context: CallbackContext) -> int:  # pylint: disable=
     return ConversationHandler.END
 
 
+def reset_command(update: Update, context: CallbackContext) -> int:  # pylint: disable=unused-argument
+    user_query = {'_id': update.effective_chat.id}
+    default_user_config = {'font-family': DEFAULT_FONT_FAMILY,
+                           'font-size': DEFAULT_FONT_SIZE,
+                           'font-color': DEFAULT_FONT_COLOR,
+                           'background-color': DEFAULT_BACKGROUND_COLOR,
+                           'orientation': DEFAULT_ORIENTATION}
+    configs.update_one(user_query, {'$set': default_user_config})
+    update.message.reply_text('Установлены первоначальные параметры.')
+    update_last_activity(update.effective_chat.id)
+    return ConversationHandler.END
+
+
 def response(update: Update, context: CallbackContext) -> None:  # pylint: disable=unused-argument
     """Response with images"""
     user_config = configs.find_one({'_id': update.effective_chat.id})
@@ -282,6 +296,7 @@ def main() -> None:
     dispatcher.add_handler(CommandHandler('font', font_command))
     dispatcher.add_handler(CommandHandler('size', size_command))
     dispatcher.add_handler(CommandHandler('orientation', orientation_command))
+    dispatcher.add_handler(CommandHandler('reset', reset_command))
 
     color_conv_handler = ConversationHandler(
         entry_points=[CommandHandler('color', color_command)],
