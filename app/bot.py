@@ -126,7 +126,8 @@ def button(update: Update, context: CallbackContext) -> None:  # pylint: disable
 def help_command(update: Update, context: CallbackContext) -> None:  # pylint: disable=unused-argument
     """/help command"""
     update.message.reply_text('/font — выбор шрифта\n'
-                              '/size — выбор размера шрифта')
+                              '/size — выбор размера шрифта\n'
+                              '/orientation — форма изображения')
 
     update_last_activity(update.effective_chat.id)
 
