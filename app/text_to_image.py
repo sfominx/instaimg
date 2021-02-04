@@ -8,8 +8,9 @@ from typus.chars import NNBSP, NBSP
 IMG_MODE = 'RGB'
 
 
-class TextToImages:
+class TextToImages:  # pylint: disable=too-many-instance-attributes
     """Make several images from text"""
+
     def __init__(self, width: int, height: int, font: ImageFont, background_color):
         self.font = font
         self.base_font_width, self.base_font_height = self.font.getsize('W')

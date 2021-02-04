@@ -1,2 +1,4 @@
 db
 /telegram_bot_token
+venv
+.idea
