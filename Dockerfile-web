@@ -1,0 +1,15 @@
+FROM python:3.8-slim-buster
+
+ENV DEBIAN_FRONTEND noninteractive
+
+WORKDIR /opt/web
+
+RUN python3 -m venv /opt/web/venv
+COPY requirements-web.txt /opt/web/requirements.txt
+RUN . /opt/web/venv/bin/activate && pip install -r requirements.txt
+
+COPY web /opt/web
+
+EXPOSE 80
+
+CMD . /opt/web/venv/bin/activate && uvicorn main:app --host 0.0.0.0 --port 80

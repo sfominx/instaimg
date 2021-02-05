@@ -1,0 +1,44 @@
+{% extends 'index.html' %} {% block content %}
+    <div id="app">
+      <div class="wrapper fadeInDown">
+        <div id="formContent">
+          <form class="login" @submit.prevent="login">
+            <h1>Sign in</h1>
+            <input class="fadeIn" required v-model="username" type="text" placeholder="login" id="login" />
+            <input class="fadeIn" required v-model="password" type="password" placeholder="password" id="password" />
+            <input type="submit" class="fadeIn" value="Log In" />
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      var app = new Vue({
+        el: "#app",
+        delimiters: ["[[", "]]"],
+        data: {
+          username: "",
+          password: "",
+        },
+        methods: {
+          login() {
+            const formData = new FormData();
+            formData.set("username", this.username);
+            formData.set("password", this.password);
+            axios
+              .post("/api/token", formData, {
+                headers: {
+                  "Content-Type": "multipart/form-data",
+                },
+              })
+              .then((response) => {
+                axios.defaults.headers.common["Authorization"] = "Bearer " + response.data.access_token;
+                localStorage.setItem("token", JSON.stringify(response.data.access_token));
+                window.location.href = "/";
+              })
+              .catch((error) => console.log(error));
+          },
+        },
+      });
+    </script>
+{% endblock %}

@@ -13,6 +13,7 @@ from telegram.ext import Updater, CommandHandler, CallbackContext, MessageHandle
     ConversationHandler
 
 from color_recognition import text_to_rgb
+from secrets import TELEGRAM_BOT_TOKEN
 from text_to_image import TextToImages
 
 DEFAULT_FONT_FAMILY = 'roboto'
@@ -41,17 +42,32 @@ HELP_MESSAGE = '/font — выбор шрифта\n' \
                '/bgcolor — выбор цвета фона\n' \
                '/reset — сброс параметров'
 
+ET_UNKNOWN_COLOR = 'unknown color'
+
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 logger = logging.getLogger(__name__)
 
-configs = MongoClient('mongodb://mongo').instaimg.configs
+db = MongoClient('mongodb://mongo').instaimg
+configs_db = db.configs
+errors_db = db.errors
 
 
 def update_last_activity(chat_id: int):
     """Update last user activity date in MongoDB"""
     user_query = {'_id': chat_id}
-    configs.update_one(user_query, {'$set': {'last-activity': datetime.now()}})
+    configs_db.update_one(user_query, {'$set': {'last-activity': datetime.utcnow()}})
+
+
+def add_error(chat_id: int, error_type: str, msg: str):
+    """Update last user activity date in MongoDB"""
+
+    query = {'chat_id': chat_id,
+             'timestamp': datetime.utcnow(),
+             'msg': msg,
+             'type': error_type,
+             'solved': False}
+    errors_db.insert_one(query)
 
 
 def start(update: Update, context: CallbackContext) -> None:  # pylint: disable=unused-argument
@@ -113,19 +129,19 @@ def button(update: Update, context: CallbackContext) -> None:  # pylint: disable
 
     if query.data.startswith('font'):
         set_query, selected_font = parse_font_button(query.data)
-        configs.update_one(user_query, {'$set': set_query})
+        configs_db.update_one(user_query, {'$set': set_query})
         query.edit_message_text(text=f'Выбранный шрифт: {selected_font}')
         return
 
     if query.data.startswith('size'):
         set_query, selected_size = parse_font_size_button(query.data)
-        configs.update_one(user_query, {'$set': set_query})
+        configs_db.update_one(user_query, {'$set': set_query})
         query.edit_message_text(text=f'Выбранный размер шрифта: {selected_size}')
         return
 
     if query.data.startswith('orientation'):
         set_query, selected_orientation = parse_orientation_button(query.data)
-        configs.update_one(user_query, {'$set': set_query})
+        configs_db.update_one(user_query, {'$set': set_query})
         query.edit_message_text(text=f'Выбранная форма изображения: {selected_orientation}')
 
     update_last_activity(update.effective_chat.id)
@@ -186,7 +202,7 @@ def orientation_command(update: Update, context: CallbackContext) -> None:  # py
 def color_command(update: Update, context: CallbackContext) -> None:  # pylint: disable=unused-argument
     """/color command"""
     update.message.reply_text('Выберите цвет текста. По-английски, по-русски или hex.\n'
-                              'Например: green, зеленый, 008000, #008000\n\n'
+                              'Например: feldgrau, фельдграу, 4d5d53, #4d5d53\n\n'
                               '/cancel для отмены.')
 
     update_last_activity(update.effective_chat.id)
@@ -194,15 +210,17 @@ def color_command(update: Update, context: CallbackContext) -> None:  # pylint: 
 
 
 def color_input(update: Update, context: CallbackContext) -> int:  # pylint: disable=unused-argument
+    """Process font color input"""
     user_query = {'_id': update.effective_chat.id}
     try:
         parsed_color = text_to_rgb(update.message.text.strip())
-        configs.update_one(user_query, {'$set': {'font-color': parsed_color}})
+        configs_db.update_one(user_query, {'$set': {'font-color': parsed_color}})
         update.message.reply_text(f'Цвет текста: {update.message.text.strip()}')
         update_last_activity(update.effective_chat.id)
         return ConversationHandler.END
-    except ValueError:
-        update.message.reply_text(f'Не получилось распознать текст, попробуй другой.\n\n'
+    except ValueError as exception:
+        add_error(update.effective_chat.id, ET_UNKNOWN_COLOR, str(exception))
+        update.message.reply_text('Не получилось распознать текст, попробуй другой.\n\n'
                                   '/cancel для отмены.')
         update_last_activity(update.effective_chat.id)
         return COLOR
@@ -211,7 +229,7 @@ def color_input(update: Update, context: CallbackContext) -> int:  # pylint: dis
 def bgcolor_command(update: Update, context: CallbackContext) -> None:  # pylint: disable=unused-argument
     """/bgcolor command"""
     update.message.reply_text('Выберите цвет фона. По-английски, по-русски или hex.\n'
-                              'Например: green, зеленый, 008000, #008000\n\n'
+                              'Например: white smoke, дымчато-белый, f5f5f5, #f5f5f5\n\n'
                               '/cancel для отмены.')
 
     update_last_activity(update.effective_chat.id)
@@ -219,34 +237,38 @@ def bgcolor_command(update: Update, context: CallbackContext) -> None:  # pylint
 
 
 def bgcolor_input(update: Update, context: CallbackContext) -> int:  # pylint: disable=unused-argument
+    """Process background color input"""
     user_query = {'_id': update.effective_chat.id}
     try:
         parsed_color = text_to_rgb(update.message.text.strip())
-        configs.update_one(user_query, {'$set': {'background-color': parsed_color}})
+        configs_db.update_one(user_query, {'$set': {'background-color': parsed_color}})
         update.message.reply_text(f'Цвет фона: {update.message.text.strip()}')
         update_last_activity(update.effective_chat.id)
         return ConversationHandler.END
-    except ValueError:
-        update.message.reply_text(f'Не получилось распознать текст, попробуй другой.\n\n'
+    except ValueError as exception:
+        add_error(update.effective_chat.id, ET_UNKNOWN_COLOR, str(exception))
+        update.message.reply_text('Не получилось распознать текст, попробуй другой.\n\n'
                                   '/cancel для отмены.')
         update_last_activity(update.effective_chat.id)
         return COLOR
 
 
 def cancel(update: Update, context: CallbackContext) -> int:  # pylint: disable=unused-argument
+    """Cancel command"""
     update.message.reply_text('Ок')
     update_last_activity(update.effective_chat.id)
     return ConversationHandler.END
 
 
 def reset_command(update: Update, context: CallbackContext) -> int:  # pylint: disable=unused-argument
+    """Reset preferences command"""
     user_query = {'_id': update.effective_chat.id}
     default_user_config = {'font-family': DEFAULT_FONT_FAMILY,
                            'font-size': DEFAULT_FONT_SIZE,
                            'font-color': DEFAULT_FONT_COLOR,
                            'background-color': DEFAULT_BACKGROUND_COLOR,
                            'orientation': DEFAULT_ORIENTATION}
-    configs.update_one(user_query, {'$set': default_user_config})
+    configs_db.update_one(user_query, {'$set': default_user_config})
     update.message.reply_text('Установлены первоначальные параметры.')
     update_last_activity(update.effective_chat.id)
     return ConversationHandler.END
@@ -254,7 +276,7 @@ def reset_command(update: Update, context: CallbackContext) -> int:  # pylint: d
 
 def response(update: Update, context: CallbackContext) -> None:  # pylint: disable=unused-argument
     """Response with images"""
-    user_config = configs.find_one({'_id': update.effective_chat.id})
+    user_config = configs_db.find_one({'_id': update.effective_chat.id})
     if not user_config:
         default_user_config = {'_id': update.effective_chat.id,
                                'font-family': DEFAULT_FONT_FAMILY,
@@ -262,7 +284,7 @@ def response(update: Update, context: CallbackContext) -> None:  # pylint: disab
                                'font-color': DEFAULT_FONT_COLOR,
                                'background-color': DEFAULT_BACKGROUND_COLOR,
                                'orientation': DEFAULT_ORIENTATION}
-        user_config = configs.find_one({'_id': configs.insert_one(default_user_config).inserted_id})
+        user_config = configs_db.find_one({'_id': configs_db.insert_one(default_user_config).inserted_id})
 
     user_font = FONTS.get(user_config['font-family'], FONTS[DEFAULT_FONT_FAMILY])
     font = ImageFont.truetype(str(Path('.') / 'fonts' / user_font), user_config['font-size'])
@@ -288,7 +310,7 @@ def response(update: Update, context: CallbackContext) -> None:  # pylint: disab
 
 def main() -> None:
     """Main Telegram Bot function"""
-    updater = Updater(Path('telegram_bot_token').read_text().strip(), use_context=True)
+    updater = Updater(TELEGRAM_BOT_TOKEN, use_context=True)
     dispatcher = updater.dispatcher
 
     dispatcher.add_handler(CommandHandler('start', start))

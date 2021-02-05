@@ -3,13 +3,28 @@ version: "3.7"
 services:
   bot:
     build:
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile-bot
       context: .
     container_name: instaimg_bot
     environment:
       - PYTHONUNBUFFERED=1
     volumes:
-    - ./telegram_bot_token:/opt/bot/telegram_bot_token
+    - ./secrets.py:/opt/bot/secrets.py
+    restart: always
+    depends_on:
+      - mongo
+
+  web:
+    build:
+      dockerfile: Dockerfile-web
+      context: .
+    container_name: instaimg_web
+    environment:
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "80:80"
+    volumes:
+    - ./secrets.py:/opt/web/secrets.py
     restart: always
     depends_on:
       - mongo
