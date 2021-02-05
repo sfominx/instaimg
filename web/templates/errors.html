@@ -1,0 +1,78 @@
+{% extends 'index.html' %} {% block content %}
+<div id="app">
+  <header class="header">
+    &nbsp;
+    <div class="float-right">
+      <button type="button" class="btn btn-outline-danger" v-on:click="logout" id="logout">Logout</button>
+    </div>
+  </header>
+  <div class="maincontent">
+    <div class="float-right">Total users: [[ users_count ]]</div>
+    <table class="table table-striped table-hover" v-if="errors.length">
+      <thead>
+        <tr>
+          <th>Chat id</th>
+          <th>Type</th>
+          <th>Message</th>
+          <th>Timestamp</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tr v-for="error in errors">
+        <td width="100">[[ error.chat_id ]]</td>
+        <td width="200">[[ error.type ]]</td>
+        <td>[[ error.msg ]]</td>
+        <td width="250">[[ error.timestamp ]]</td>
+        <td width="100">
+          <button
+            class="btn btn-sm btn-outline-success"
+            v-on:click="mark_as_solved($event, [[ error.id ]])"
+            id="solved"
+          >
+            Solved
+          </button>
+        </td>
+      </tr>
+    </table>
+    <h1 class="centered" v-else>No errors</h1>
+  </div>
+</div>
+
+<script>
+  var app = new Vue({
+    el: "#app",
+    delimiters: ["[[", "]]"],
+    data: {
+      errors: [],
+      users_count: NaN,
+    },
+    mounted: function () {
+      axios.get("/api/errors").then((response) => {
+        this.errors = response.data;
+      });
+      axios.get("/api/users/count").then((response) => {
+        this.users_count = response.data;
+      });
+    },
+    methods: {
+      logout() {
+        localStorage.removeItem("token");
+        document.location.reload();
+      },
+      mark_as_solved(event, error_id) {
+        id = error_id[0];
+        if (confirm("Do you really want to mark as solved?")) {
+          axios
+            .get("/api/mark_as_solved", {
+              params: {
+                error_id: id[0],
+              },
+            })
+            .then((response) => {});
+          document.location.reload();
+        }
+      },
+    },
+  });
+</script>
+{% endblock %}
