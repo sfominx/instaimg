@@ -1,4 +1,4 @@
-{% extends 'index.html' %} {% block content %}
+{% extends 'index.html' %} {% block title %}Control panel — Errors{% endblock %} {% block content %}
 <div id="app">
   <header class="header">
     &nbsp;
@@ -56,8 +56,8 @@
     },
     methods: {
       logout() {
-        localStorage.removeItem("token");
-        document.location.reload();
+        axios.delete("/api/logout");
+        window.location.href = "/login";
       },
       mark_as_solved(event, error_id) {
         id = error_id[0];

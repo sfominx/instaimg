@@ -17,7 +17,9 @@ class TokenData(BaseModel):
 
 class User(BaseModel):
     username: str
+    password: str
 
 
-class DBUser(User):
+class DBUser(BaseModel):
+    username: str
     hashed_password: str
