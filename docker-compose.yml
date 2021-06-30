@@ -1,18 +1,18 @@
 version: "3.7"
 
 services:
-  bot:
-    build:
-      dockerfile: Dockerfile-bot
-      context: .
-    container_name: instaimg_bot
-    environment:
-      - PYTHONUNBUFFERED=1
-    volumes:
-    - ./secrets.py:/opt/bot/secrets.py
-    restart: always
-    depends_on:
-      - mongo
+#  bot:
+#    build:
+#      dockerfile: Dockerfile-bot
+#      context: .
+#    container_name: instaimg_bot
+#    environment:
+#      - PYTHONUNBUFFERED=1
+#    volumes:
+#    - ./secrets.py:/opt/bot/secrets.py
+#    restart: always
+#    depends_on:
+#      - mongo
 
   web:
     build:
@@ -33,6 +33,8 @@ services:
     image: mongo:4.4.3-bionic
     environment:
       MONGO_INITDB_DATABASE: instaimg
+    ports:
+      - "2701:27017"
     volumes:
       - mongodata:/data/db
     restart: always
