@@ -9,5 +9,5 @@ jobs:
         with:
           host: ${{ secrets.PRODUCTION_SSH_HOST }}
           username: ${{ secrets.PRODUCTION_SSH_USERNAME }}
-          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          password: ${{ secrets.PRODUCTION_SSH_PASSWORD }}
           script: cd /opt/instaimg && git pull && docker-compose up --build --always-recreate-deps -d
