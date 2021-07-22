@@ -220,7 +220,7 @@ def color_input(update: Update, context: CallbackContext) -> int:  # pylint: dis
         return ConversationHandler.END
     except ValueError as exception:
         add_error(update.effective_chat.id, ET_UNKNOWN_COLOR, str(exception))
-        update.message.reply_text('Не получилось распознать текст, попробуй другой.\n\n'
+        update.message.reply_text('Не получилось распознать цвет, попробуй другой.\n\n'
                                   '/cancel для отмены.')
         update_last_activity(update.effective_chat.id)
         return COLOR
@@ -247,7 +247,7 @@ def bgcolor_input(update: Update, context: CallbackContext) -> int:  # pylint: d
         return ConversationHandler.END
     except ValueError as exception:
         add_error(update.effective_chat.id, ET_UNKNOWN_COLOR, str(exception))
-        update.message.reply_text('Не получилось распознать текст, попробуй другой.\n\n'
+        update.message.reply_text('Не получилось распознать цвет, попробуй другой.\n\n'
                                   '/cancel для отмены.')
         update_last_activity(update.effective_chat.id)
         return COLOR

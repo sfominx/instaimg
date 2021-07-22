@@ -1,6 +1,8 @@
 """Text to color conversion"""
 # pylint: disable=too-many-lines
-from webcolors import name_to_rgb, hex_to_rgb, IntegerRGB
+import re
+
+from webcolors import name_to_rgb, hex_to_rgb, IntegerRGB, normalize_integer_triplet
 
 # Colors from https://maximal.github.io/colour/colours.json
 RUSSIAN_NAMES_TO_HEX = {'cиняялазурь': '2a52be',
@@ -1331,6 +1333,10 @@ RUSSIAN_NAMES_TO_HEX = {'cиняялазурь': '2a52be',
                         'яркофиолетовый': 'cd00cd',
                         'ёлки': '2a5c03'}
 
+ENGLISH_NAMES_TO_HEX = {
+    'rose': 'ff0080'
+}
+
 colors = ['green', 'red', 'blue', 'light blue', 'bcabca', 'acb', '123', '000', '#bcabca', '#acb', '#123', '#000',
           'красный', 'блошиного брюшка', 'paf']
 
@@ -1358,6 +1364,12 @@ def text_to_rgb(color_text: str) -> IntegerRGB:
     except ValueError:
         pass
 
+    # Parse custom english color names
+    try:
+        return hex_to_rgb(make_hex(ENGLISH_NAMES_TO_HEX[normalized_color]))
+    except KeyError:
+        pass
+
     # Parse russian color names
     try:
         return hex_to_rgb(make_hex(RUSSIAN_NAMES_TO_HEX[normalized_color]))
@@ -1369,6 +1381,15 @@ def text_to_rgb(color_text: str) -> IntegerRGB:
         normalized_color = make_hex(normalized_color)
     try:
         return hex_to_rgb(normalized_color)
+    except ValueError:
+        pass
+
+    # Parse rgb(191, 93, 255) like colors
+    rgb_pattern = r"(\d+),\s*(\d+),\s*(\d+)"
+    try:
+        match = re.search(rgb_pattern, normalized_color)
+        if match and all(0 <= int(group) <= 255 for group in match.groups()):
+            return normalize_integer_triplet((int(match.group(1)), int(match.group(2)), int(match.group(3))))
     except ValueError:
         pass
 
