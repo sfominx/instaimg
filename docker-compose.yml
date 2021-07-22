@@ -1,18 +1,18 @@
 version: "3.7"
 
 services:
-#  bot:
-#    build:
-#      dockerfile: Dockerfile-bot
-#      context: .
-#    container_name: instaimg_bot
-#    environment:
-#      - PYTHONUNBUFFERED=1
-#    volumes:
-#    - ./secrets.py:/opt/bot/secrets.py
-#    restart: always
-#    depends_on:
-#      - mongo
+  bot:
+    build:
+      dockerfile: Dockerfile-bot
+      context: .
+    container_name: instaimg_bot
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+    - ./secrets.py:/opt/bot/secrets.py
+    restart: always
+    depends_on:
+      - mongo
 
   web:
     build:
