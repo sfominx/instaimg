@@ -11,7 +11,7 @@ IMG_MODE = 'RGB'
 class TextToImages:  # pylint: disable=too-many-instance-attributes
     """Make several images from text"""
 
-    def __init__(self, width: int, height: int, font: ImageFont, background_color, font_color):
+    def __init__(self, width: int, height: int, font: ImageFont, background_color, font_color, alignment: str):
         self.font = font
         self.base_font_width, self.base_font_height = self.font.getsize('W')
         self.width = width
@@ -23,6 +23,7 @@ class TextToImages:  # pylint: disable=too-many-instance-attributes
         self._max_width = self.width - 2.5 * self.base_font_width
         self._new_image = False
         self.font_color = font_color
+        self.alignment = alignment
 
     def _reset_line(self):
         """Start new image, place cursor in the beginning of the image"""
@@ -39,7 +40,33 @@ class TextToImages:  # pylint: disable=too-many-instance-attributes
 
     def _draw_line(self, text):
         """Print text line"""
-        self._canvas.text((self.base_font_width, self._text_y), text, fill=self.font_color)
+        if self.alignment == 'justify':
+            words = text.split()
+            text_size = self.font.getsize(''.join(words))[0]
+
+            if len(words) > 1:
+                white_space_width = (self._max_width - text_size) // (len(words) - 1)
+            else:
+                white_space_width = 0
+
+            text_start = self.base_font_width
+            for word in words:
+                self._canvas.text((text_start, self._text_y), word, fill=self.font_color)
+                text_start += self.font.getsize(word)[0] + white_space_width
+
+        elif self.alignment == 'right':
+            text_width = self.font.getsize(text)[0]
+            self._canvas.text((self.width - self.base_font_width - text_width, self._text_y),
+                              text,
+                              fill=self.font_color)
+
+        elif self.alignment == 'center':
+            text_width = self.font.getsize(text)[0]
+            self._canvas.text(((self.width - text_width) // 2, self._text_y), text, fill=self.font_color)
+
+        else:
+            self._canvas.text((self.base_font_width, self._text_y), text, fill=self.font_color)
+
         if text.strip() or not self._new_image:
             self._shift_line()
 

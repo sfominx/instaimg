@@ -21,6 +21,7 @@ DEFAULT_FONT_SIZE = 40
 DEFAULT_FONT_COLOR = (0, 0, 0)
 DEFAULT_BACKGROUND_COLOR = (255, 255, 255)
 DEFAULT_ORIENTATION = 'square'
+DEFAULT_ALIGNMENT = 'left'
 
 DEFAULT_IMG_WIDTH = 720
 
@@ -120,6 +121,20 @@ def parse_orientation_button(data):
     return {'orientation': DEFAULT_ORIENTATION}, 'квадратная'
 
 
+def parse_alignment_button(data):
+    """Parse data returned by text alignment selection"""
+    if data == 'alignment_left':
+        return {'alignment': 'left'}, 'слева'
+    if data == 'alignment_center':
+        return {'alignment': 'center'}, 'по центру'
+    if data == 'alignment_right':
+        return {'alignment': 'right'}, 'справа'
+    if data == 'alignment_justify':
+        return {'alignment': 'justify'}, 'по ширине'
+
+    return {'alignment': DEFAULT_ALIGNMENT}, 'слева'
+
+
 def button(update: Update, context: CallbackContext) -> None:  # pylint: disable=unused-argument
     """Button press"""
     query = update.callback_query
@@ -144,6 +159,11 @@ def button(update: Update, context: CallbackContext) -> None:  # pylint: disable
         configs_db.update_one(user_query, {'$set': set_query})
         query.edit_message_text(text=f'Выбранная форма изображения: {selected_orientation}')
 
+    if query.data.startswith('alignment'):
+        set_query, selected_alignment = parse_alignment_button(query.data)
+        configs_db.update_one(user_query, {'$set': set_query})
+        query.edit_message_text(text=f'Выбранное выравнивание текста: {selected_alignment}')
+
     update_last_activity(update.effective_chat.id)
 
 
@@ -156,12 +176,12 @@ def help_command(update: Update, context: CallbackContext) -> None:  # pylint: d
 
 def font_command(update: Update, context: CallbackContext) -> None:  # pylint: disable=unused-argument
     """/font command"""
-    font_list = [[InlineKeyboardButton(text='Roboto', callback_data='font_roboto'),
-                  InlineKeyboardButton(text='Raleway', callback_data='font_raleway'),
-                  InlineKeyboardButton(text='Playfair', callback_data='font_playfair')
-                  ],
-                 ]
-    keyboard = InlineKeyboardMarkup(font_list)
+    fonts_list = [[InlineKeyboardButton(text='Roboto', callback_data='font_roboto'),
+                   InlineKeyboardButton(text='Raleway', callback_data='font_raleway'),
+                   InlineKeyboardButton(text='Playfair', callback_data='font_playfair')
+                   ],
+                  ]
+    keyboard = InlineKeyboardMarkup(fonts_list)
 
     update.message.reply_text('Выберите шрифт', reply_markup=keyboard)
 
@@ -170,14 +190,14 @@ def font_command(update: Update, context: CallbackContext) -> None:  # pylint: d
 
 def size_command(update: Update, context: CallbackContext) -> None:  # pylint: disable=unused-argument
     """/size command"""
-    font_list = [[InlineKeyboardButton(text='XS', callback_data='size_smallest'),
-                  InlineKeyboardButton(text='S', callback_data='size_small'),
-                  InlineKeyboardButton(text='M', callback_data='size_medium'),
-                  InlineKeyboardButton(text='L', callback_data='size_big'),
-                  InlineKeyboardButton(text='XL', callback_data='size_biggest')
-                  ],
-                 ]
-    keyboard = InlineKeyboardMarkup(font_list)
+    sizes_list = [[InlineKeyboardButton(text='XS', callback_data='size_smallest'),
+                   InlineKeyboardButton(text='S', callback_data='size_small'),
+                   InlineKeyboardButton(text='M', callback_data='size_medium'),
+                   InlineKeyboardButton(text='L', callback_data='size_big'),
+                   InlineKeyboardButton(text='XL', callback_data='size_biggest')
+                   ],
+                  ]
+    keyboard = InlineKeyboardMarkup(sizes_list)
 
     update.message.reply_text('Выберите размер шрифта', reply_markup=keyboard)
 
@@ -186,15 +206,30 @@ def size_command(update: Update, context: CallbackContext) -> None:  # pylint: d
 
 def orientation_command(update: Update, context: CallbackContext) -> None:  # pylint: disable=unused-argument
     """/orientation command"""
-    font_list = [[InlineKeyboardButton(text='Square', callback_data='orientation_square'),
-                  InlineKeyboardButton(text='Vertical', callback_data='orientation_vertical'),
-                  InlineKeyboardButton(text='Horizontal', callback_data='orientation_horizontal'),
-                  InlineKeyboardButton(text='Stories', callback_data='orientation_stories')
-                  ],
-                 ]
-    keyboard = InlineKeyboardMarkup(font_list)
+    orientations_list = [[InlineKeyboardButton(text='Square', callback_data='orientation_square'),
+                          InlineKeyboardButton(text='Vertical', callback_data='orientation_vertical'),
+                          InlineKeyboardButton(text='Horizontal', callback_data='orientation_horizontal'),
+                          InlineKeyboardButton(text='Stories', callback_data='orientation_stories')
+                          ],
+                         ]
+    keyboard = InlineKeyboardMarkup(orientations_list)
 
     update.message.reply_text('Выберите форму изображения', reply_markup=keyboard)
+
+    update_last_activity(update.effective_chat.id)
+
+
+def alignment_command(update: Update, context: CallbackContext) -> None:  # pylint: disable=unused-argument
+    """/alignment command"""
+    alignment_list = [[InlineKeyboardButton(text='Слева', callback_data='alignment_left'),
+                       InlineKeyboardButton(text='По центру', callback_data='alignment_center'),
+                       InlineKeyboardButton(text='Справа', callback_data='alignment_right'),
+                       InlineKeyboardButton(text='По ширине', callback_data='alignment_justify')
+                       ],
+                      ]
+    keyboard = InlineKeyboardMarkup(alignment_list)
+
+    update.message.reply_text('Выберите выравнивание текста', reply_markup=keyboard)
 
     update_last_activity(update.effective_chat.id)
 
@@ -267,7 +302,8 @@ def reset_command(update: Update, context: CallbackContext) -> int:  # pylint: d
                            'font-size': DEFAULT_FONT_SIZE,
                            'font-color': DEFAULT_FONT_COLOR,
                            'background-color': DEFAULT_BACKGROUND_COLOR,
-                           'orientation': DEFAULT_ORIENTATION}
+                           'orientation': DEFAULT_ORIENTATION,
+                           'alignment': DEFAULT_ALIGNMENT}
     configs_db.update_one(user_query, {'$set': default_user_config})
     update.message.reply_text('Установлены первоначальные параметры.')
     update_last_activity(update.effective_chat.id)
@@ -283,7 +319,8 @@ def response(update: Update, context: CallbackContext) -> None:  # pylint: disab
                                'font-size': DEFAULT_FONT_SIZE,
                                'font-color': DEFAULT_FONT_COLOR,
                                'background-color': DEFAULT_BACKGROUND_COLOR,
-                               'orientation': DEFAULT_ORIENTATION}
+                               'orientation': DEFAULT_ORIENTATION,
+                               'alignment': DEFAULT_ALIGNMENT}
         user_config = configs_db.find_one({'_id': configs_db.insert_one(default_user_config).inserted_id})
 
     user_font = FONTS.get(user_config['font-family'], FONTS[DEFAULT_FONT_FAMILY])
@@ -294,7 +331,8 @@ def response(update: Update, context: CallbackContext) -> None:  # pylint: disab
                        img_height,
                        font,
                        tuple(user_config['background-color']),
-                       tuple(user_config['font-color']))
+                       tuple(user_config['font-color']),
+                       user_config.get('alignment', DEFAULT_ALIGNMENT))
 
     images = []
     for part in range(len(tti.split_text(update.message.text, True))):
@@ -318,6 +356,7 @@ def main() -> None:
     dispatcher.add_handler(CommandHandler('font', font_command))
     dispatcher.add_handler(CommandHandler('size', size_command))
     dispatcher.add_handler(CommandHandler('orientation', orientation_command))
+    dispatcher.add_handler(CommandHandler('alignment', alignment_command))
     dispatcher.add_handler(CommandHandler('reset', reset_command))
 
     color_conv_handler = ConversationHandler(
