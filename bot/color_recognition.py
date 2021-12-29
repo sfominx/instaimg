@@ -228,6 +228,7 @@ RUSSIAN_NAMES_TO_HEX = {'cиняялазурь': '2a52be',
                         'дикийарбузкрайола': 'fc6c85',
                         'дикийсинийкрайола': 'a2add0',
                         'дымчатобелый': 'f5f5f5',
+                        'дымчатосерый': 'c4c4bc',
                         'дынножелтый': 'f4a900',
                         'дынножёлтый': 'f4a900',
                         'дынякрайола': 'fdbcb4',
@@ -1334,7 +1335,8 @@ RUSSIAN_NAMES_TO_HEX = {'cиняялазурь': '2a52be',
                         'ёлки': '2a5c03'}
 
 ENGLISH_NAMES_TO_HEX = {
-    'rose': 'ff0080'
+    'rose': 'ff0080',
+    'feldgrau': '4d5d53'
 }
 
 colors = ['green', 'red', 'blue', 'light blue', 'bcabca', 'acb', '123', '000', '#bcabca', '#acb', '#123', '#000',
